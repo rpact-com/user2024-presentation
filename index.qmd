@@ -1,0 +1,324 @@
+---
+title: 'Engineering a Reliable R Package for Regulatory Use Using “rpact” as an Example'
+subtitle: 'useR! 2024, Salzburg, Austria'
+date: 07/10/2024
+date-format: long
+author: Friedrich Pahlke and Gernot Wassmer
+affiliation: RPACT
+institute: RPACT
+format: 
+  revealjs:
+    theme: [default, custom.scss]
+    logo: ../figures/logo_full.png
+    fontsize: 34px
+    toc: false
+    slide-number: true
+    progress: true
+    code-line-numbers: true
+    mouse-wheel: false
+    link-external-newwindow: true
+    footer: '[useR! 2024 | Salzburg]{.footer-text}  &nbsp; [<svg xmlns="http://www.w3.org/2000/svg" height="1.0em" viewBox="0 0 384 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --> <path d="M48 0C21.5 0 0 21.5 0 48V464c0 26.5 21.5 48 48 48h96V432c0-26.5 21.5-48 48-48s48 21.5 48 48v80h96c26.5 0 48-21.5 48-48V48c0-26.5-21.5-48-48-48H48zM64 240c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V240zm112-16h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H176c-8.8 0-16-7.2-16-16V240c0-8.8 7.2-16 16-16zm80 16c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H272c-8.8 0-16-7.2-16-16V240zM80 96h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16zm80 16c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H176c-8.8 0-16-7.2-16-16V112zM272 96h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H272c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16z"/> </svg>](https://www.rpact.com/ "RPACT Website"){preview-link="false" .external target="_blank"} &nbsp; [<svg xmlns="http://www.w3.org/2000/svg" height="1.0em" viewBox="0 0 448 512"> <!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --> <path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/> </svg>](https://www.linkedin.com/company/rpact/ "RPACT @ LinkedIn"){preview-link="false" .external target="_blank"} &nbsp; [<svg xmlns="http://www.w3.org/2000/svg" height="1.0em" viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M256 64C150 64 64 150 64 256s86 192 192 192c17.7 0 32 14.3 32 32s-14.3 32-32 32C114.6 512 0 397.4 0 256S114.6 0 256 0S512 114.6 512 256v32c0 53-43 96-96 96c-29.3 0-55.6-13.2-73.2-33.9C320 371.1 289.5 384 256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128c27.9 0 53.7 8.9 74.7 24.1c5.7-5 13.1-8.1 21.3-8.1c17.7 0 32 14.3 32 32v80 32c0 17.7 14.3 32 32 32s32-14.3 32-32V256c0-106-86-192-192-192zm64 192a64 64 0 1 0 -128 0 64 64 0 1 0 128 0z"/>  </svg>](https://www.rpact.com/contact "Contact"){preview-link="false" .external target="_blank"}'
+    title-slide-attributes:
+        data-background-image: "../figures/logo_full.png"
+        data-background-size: "200px 200px"
+        data-background-position: "20px 20px"
+        data-background-opacity: "1"
+    include-in-header:
+        - text: |
+            <link href="./favicon.ico" rel="icon" />
+---
+
+
+## Automation
+
+**Automation of recurring validation processes/activities**
+
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| code-line-numbers: "3,4,5,6,7,8,10,11,12"
+library(rpact.validator)
+
+createNewsTexFile()
+createBaseRPackagesTable()
+createOutputSpecification()
+createPlotTypeSpecification()
+createSourceDirectoryStructure()
+createBusinessObjectStructure()
+createUnitTests()
+createTestPlan()
+createUnitTestResultDocumentation()
+createPerformanceQualification()
+runSopCheck()
+``` 
+
+$\rightarrow$ Documentation work
+
+
+## 
+
+**Automation of recurring validation processes/activities**
+
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| code-line-numbers: "13"
+library(rpact.validator)
+
+createNewsTexFile()
+createBaseRPackagesTable()
+createOutputSpecification()
+createPlotTypeSpecification()
+createSourceDirectoryStructure()
+createBusinessObjectStructure()
+createUnitTests()
+createTestPlan()
+createUnitTestResultDocumentation()
+createPerformanceQualification()
+runSopCheck()
+``` 
+
+$\rightarrow$ Quality control of the process steps up to the final validation documentation
+
+$\rightarrow$ The SOPs help not to forget or overlook any step
+
+
+## 
+
+**Automation of recurring validation processes/activities**
+
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| code-line-numbers: "9"
+library(rpact.validator)
+
+createNewsTexFile()
+createBaseRPackagesTable()
+createOutputSpecification()
+createPlotTypeSpecification()
+createSourceDirectoryStructure()
+createBusinessObjectStructure()
+createUnitTests()
+createTestPlan()
+createUnitTestResultDocumentation()
+createPerformanceQualification()
+runSopCheck()
+``` 
+
+$\rightarrow$ Efficient unit test case generation
+
+
+## Example: Test Template
+
+`test_template_f_design_group_sequential.R`:
+
+::: {.r-stack}
+::: {.fragment .fade-in-then-out}
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#' @exit Do not create the unit tests again
+#' @context Testing the Group Sequential and Inverse Normal Design Functionality
+
+#' @test_that 'getDesignInverseNormal' with default parameters: 
+#'             parameters and results are as expected
+
+#' @refFS[Tab.]{fs:tab:output:getDesignInverseNormal}
+#' @refFS[Formula]{fs:criticalValuesOBrienFleming}
+x0 <- getDesignInverseNormal()
+getUnitTestObject(x0, "x0")
+```
+Template
+:::
+
+::: {.fragment .fade-in-then-out}
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| code-line-numbers: "1"
+#' @exit Do not create the unit tests again
+#' @context Testing the Group Sequential and Inverse Normal Design Functionality
+
+#' @test_that 'getDesignInverseNormal' with default parameters: 
+#'             parameters and results are as expected
+
+#' @refFS[Tab.]{fs:tab:output:getDesignInverseNormal}
+#' @refFS[Formula]{fs:criticalValuesOBrienFleming}
+x0 <- getDesignInverseNormal()
+getUnitTestObject(x0, "x0")
+```
+Regeneration is disabled
+<!-- Regeneration may only occur after bugs have been fixed or test cases have been added -->
+:::
+
+::: {.fragment .fade-in-then-out}
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| code-line-numbers: "2"
+#' @exit Do not create the unit tests again
+#' @context Testing the Group Sequential and Inverse Normal Design Functionality
+
+#' @test_that 'getDesignInverseNormal' with default parameters: 
+#'             parameters and results are as expected
+
+#' @refFS[Tab.]{fs:tab:output:getDesignInverseNormal}
+#' @refFS[Formula]{fs:criticalValuesOBrienFleming}
+x0 <- getDesignInverseNormal()
+getUnitTestObject(x0, "x0")
+```
+Section title in the document (context for testthat version <3)
+:::
+
+::: {.fragment .fade-in-then-out}
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| code-line-numbers: "4,5"
+#' @exit Do not create the unit tests again
+#' @context Testing the Group Sequential and Inverse Normal Design Functionality
+
+#' @test_that 'getDesignInverseNormal' with default parameters: 
+#'             parameters and results are as expected
+
+#' @refFS[Tab.]{fs:tab:output:getDesignInverseNormal}
+#' @refFS[Formula]{fs:criticalValuesOBrienFleming}
+x0 <- getDesignInverseNormal()
+getUnitTestObject(x0, "x0")
+```
+Unit test title/description
+:::
+
+::: {.fragment .fade-in-then-out}
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| code-line-numbers: "7"
+#' @exit Do not create the unit tests again
+#' @context Testing the Group Sequential and Inverse Normal Design Functionality
+
+#' @test_that 'getDesignInverseNormal' with default parameters: 
+#'             parameters and results are as expected
+
+#' @refFS[Tab.]{fs:tab:output:getDesignInverseNormal}
+#' @refFS[Formula]{fs:criticalValuesOBrienFleming}
+x0 <- getDesignInverseNormal()
+getUnitTestObject(x0, "x0")
+```
+Reference to a table in the Functional Specification
+:::
+
+::: {.fragment .fade-in-then-out}
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| code-line-numbers: "8"
+#' @exit Do not create the unit tests again
+#' @context Testing the Group Sequential and Inverse Normal Design Functionality
+
+#' @test_that 'getDesignInverseNormal' with default parameters: 
+#'             parameters and results are as expected
+
+#' @refFS[Tab.]{fs:tab:output:getDesignInverseNormal}
+#' @refFS[Formula]{fs:criticalValuesOBrienFleming}
+x0 <- getDesignInverseNormal()
+getUnitTestObject(x0, "x0")
+```
+Reference to a formula in the Functional Specification
+:::
+
+::: {.fragment .fade-in-then-out}
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| code-line-numbers: "9"
+#' @exit Do not create the unit tests again
+#' @context Testing the Group Sequential and Inverse Normal Design Functionality
+
+#' @test_that 'getDesignInverseNormal' with default parameters: 
+#'             parameters and results are as expected
+
+#' @refFS[Tab.]{fs:tab:output:getDesignInverseNormal}
+#' @refFS[Formula]{fs:criticalValuesOBrienFleming}
+x0 <- getDesignInverseNormal()
+getUnitTestObject(x0, "x0")
+```
+The function call to be tested
+:::
+
+::: {.fragment .fade-in-then-out}
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| code-line-numbers: "10"
+#' @exit Do not create the unit tests again
+#' @context Testing the Group Sequential and Inverse Normal Design Functionality
+
+#' @test_that 'getDesignInverseNormal' with default parameters: 
+#'             parameters and results are as expected
+
+#' @refFS[Tab.]{fs:tab:output:getDesignInverseNormal}
+#' @refFS[Formula]{fs:criticalValuesOBrienFleming}
+x0 <- getDesignInverseNormal()
+getUnitTestObject(x0, "x0")
+```
+Create a unit test for each field of the object `x0`.
+:::
+
+:::
+
+## Example: Test Template
+
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+library(rpact)
+library(rpact.validator)
+x0 <- getDesignInverseNormal()
+getUnitTestObject(x0, "x0")
+```
+results in:
+
+```{css, echo=FALSE}
+.limited-height .sourceCode {
+    /*max-height: 380px;*/
+    height: 380px;
+}
+```
+
+```{r}
+#| class-source: limited-height
+#| echo: TRUE
+#| eval: FALSE
+## Comparison of the results of TrialDesignInverseNormal 
+## object 'x0' with expected results
+expect_equal(x0$alphaSpent, c(0.00025917372, 0.0071600594, 0.02499999), 
+    tolerance = 1e-07)
+expect_equal(x0$criticalValues, c(3.4710914, 2.4544323, 2.0040356), 
+    tolerance = 1e-07)
+expect_equal(x0$stageLevels, c(0.00025917372, 0.0070553616, 0.022533125), 
+    tolerance = 1e-07)
+
+invisible(capture.output(expect_error(print(x0), NA)))
+expect_output(print(x0)$show())
+invisible(capture.output(expect_error(summary(x0), NA)))
+expect_output(summary(x0)$show())
+x0CodeBased <- eval(parse(text = 
+    getObjectRCode(x0, stringWrapParagraphWidth = NULL)))
+expect_equal(x0CodeBased$alphaSpent, x0$alphaSpent, tolerance = 1e-07)
+expect_equal(x0CodeBased$criticalValues, x0$criticalValues, tolerance = 1e-07)
+expect_equal(x0CodeBased$stageLevels, x0$stageLevels, tolerance = 1e-07)
+expect_type(names(x0), "character")
+df <- as.data.frame(x0)
+expect_s3_class(df, "data.frame")
+expect_true(nrow(df) > 0 && ncol(df) > 0)
+mtx <- as.matrix(x0)
+expect_true(is.matrix(mtx))
+expect_true(nrow(mtx) > 0 && ncol(mtx) > 0)
+```
+
+## Contact
+
+Friedrich Pahlke [`r fontawesome::fa("github")`](https://github.com/fpahlke/) [`r fontawesome::fa("linkedin")`](https://www.linkedin.com/in/pahlke/)
+
